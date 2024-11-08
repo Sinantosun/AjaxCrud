@@ -1,0 +1,19 @@
+﻿@using AjaxCrud.Dal.Entities
+@model Process
+@{
+    ViewData["Title"] = "Add";
+}
+
+<div class="container">
+
+    <div class="text-center">
+        <h1 class="display-4">Kayıt Ekle</h1>
+        <hr />
+        <br>
+        <div class="form-group mt-2">
+            <input type="text" class="form-control" asp-for="Note" placeholder="Başlık" />
+        </div>
+    </div>
+    <a class="btn btn-primary mt-2" href="/Home/Add">Ekle</a>
+</div>
+

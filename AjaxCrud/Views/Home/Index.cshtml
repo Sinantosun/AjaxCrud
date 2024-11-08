@@ -1,0 +1,230 @@
+﻿@using AjaxCrud.Dal.Entities
+@model List<Process>
+@{
+    ViewData["Title"] = "Home Page";
+}
+<div class="container">
+
+    <div class="text-center">
+        <h1 class="display-4">Yapılacaklar Listesi</h1>
+        <hr />
+        <br>
+        <div class="table table-responsive list">
+        </div>
+    </div>
+
+    <button class="btn btn-primary btnmodal">Ekle</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+@section Scripts {
+    <script>
+        function DeleteData(id) {
+            Swal.fire({
+                title: "Kayıt silinsin mi?",
+                text: "Bu işlem geri alınamaz.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Sil",
+                cancelButtonText: "Vazgeç",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/home/Delete/',
+                        data: { 'id': id },
+                        success: function (result) {
+                            if (result == "success") {
+                                GetList();
+                                Swal.fire({
+                                    title: "Başarılı",
+                                    text: "Kayıt Silindi.",
+                                    icon: "success",
+                                    timer: 1500,
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        function ChangeStatusToTrue(id) {
+            $.ajax({
+                url: '/Home/StatusChange',
+                data: { 'id': id },
+                success: function (data) {
+                    Swal.fire({
+                        title: "İşlem Tamamlandı",
+                        text: "Kayıt Güncellendi",
+                        icon: "success",
+                        timer:900,
+                    });
+                    GetList();
+                }
+          
+            });
+        }
+        function ShowModal(id, note) {
+            $('#exampleModal2').modal('show');
+            $("#note2").val(note);
+            $("#noteid").val(id);
+        }
+
+        $(function () {
+            $(".btnmodal").click(function () {
+                $('#exampleModal').modal('show')
+
+            });
+            $(".btnadd").click(function () {
+
+                var note = $("#note").val();
+                $.ajax({
+                    url: '/Home/Add',
+                    method: 'post',
+                    data: { 'note': note },
+                    success: function (data) {
+                        if (data == "success") {
+                            Swal.fire({
+                                title: "İşlem Başarılı!",
+                                text: "Kayıt Eklendi",
+                                icon: "success",
+                                timer: 1500,
+                            });
+
+                            GetList();
+                            $('#exampleModal').modal('hide');
+                            $("#note").val("");
+                        }
+                        else {
+                            alert("hata");
+                        }
+                    }
+                });
+
+            });
+            GetList();
+            $(".btnupdate").click(function () {
+
+                var note = $("#note2").val();
+                var id = $("#noteid").val();
+
+                $.ajax({
+                    url: "/Home/Update",
+                    data: { 'id': id, 'note': note },
+                    success: function (result) {
+                        Swal.fire({
+                            title: "İşlem Başarılı",
+                            text: "Kayıt Güncellendi.",
+                            icon: "success"
+                        });
+                        GetList();
+                        $('#exampleModal2').modal('hide');
+                    }
+                });
+
+            });
+
+
+        });
+        function GetList() {
+            let count = 0;
+            let tablehtml = `<table class='table table-bordered'>
+                                                                           <thead>
+                                                                                 <tr>
+                                                                                   <th>#</th>
+                                                                                   <th>Başlık</th>
+                                                                                   <th>Tarih</th>
+                                                                                   <th>Durum</th>
+                                                                                   <th colspan=3 class='text-center'>İşlemler</th>
+                                                                                 </tr>
+                                                                           </thead>
+                                                                           <tbody>`
+            $.ajax({
+                url: "/Home/List",
+                type: 'GET',
+                dataType: 'json',
+                success: function (value) {
+                    $.each(value, (index, item) => {
+                        const options = { day: 'numeric', month: 'long' };
+                        const formattedDate = new Date(item.date).toLocaleDateString('tr-TR', options);
+                        let text = "";
+                        let cardCss = "";
+                        let cardCss2 = "";
+                        count++;
+                        if (item.isComplated == false) {
+                            text = "Tamamlanmadı";
+                            cardCss = "badge bg-danger";
+                            cardCss2 = "";
+                        }
+                        else {
+                            text = "Tamamlandı";
+                            cardCss = "badge bg-success";
+                            cardCss2 = "disabled";
+                        }
+                        tablehtml += `<tr>
+                                         <td>${count}</td>
+                                        <td>${item.note}</td>
+                                        <td>${formattedDate}</td>
+                                        <td><span class='${cardCss}'>${text}<span></td>
+                                        <td><button class="btn btn-outline-success" onclick=ShowModal('${item.processId}','${item.note}')>Güncelle</button></td>
+                                        <td><button onclick=DeleteData(${item.processId}) class="btn btn-outline-danger">Sil</button></td>
+                                                <td><button onclick=ChangeStatusToTrue(${item.processId})  class="btn btn-outline-dark" ${cardCss2}>Tamamla</button></td>
+                                     </tr>`
+                    });
+                    tablehtml += "</tbody></table>";
+                    $(".list").html(tablehtml);
+                }
+
+            });
+
+        }
+
+    </script>
+
+
+}
+
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Yeni Alan Ekle</h5>
+            </div>
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="note" class="col-form-label">Başlık</label>
+                    <input type="text" class="form-control" id="note">
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btnadd">Ekle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="exampleModal2" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Alan Güncelle</h5>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" class="form-control" id="noteid">
+                <div class="form-group">
+                    <label for="note2" class="col-form-label">Başlık</label>
+                    <input type="text" class="form-control" id="note2">
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btnupdate">Güncelle</button>
+            </div>
+        </div>
+    </div>
+</div>
